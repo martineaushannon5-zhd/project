@@ -3,10 +3,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from schemas import RoomResponse, SeatResponse, ReservationResponse, ReservationCreate
-from crud import get_rooms, get_seats_by_room, create_reservation, get_reservations_by_user
+from crud import get_rooms, get_seats_by_room, create_reservation, get_reservations_by_user, get_dashboard_stats
 from database import get_db
 
 router = APIRouter(prefix="/api/seats", tags=["自习室与座位模块"])
+
+@router.get("/stats")
+async def get_stats_endpoint(db: AsyncSession = Depends(get_db)):
+    """获取数据看板统计信息"""
+    return await get_dashboard_stats(db)
 
 @router.get("/rooms", response_model=List[RoomResponse])
 async def get_rooms_endpoint(db: AsyncSession = Depends(get_db)):
