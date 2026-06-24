@@ -19,12 +19,6 @@
             <el-button size="large" class="ghost-btn" @click="go('/portal/notices')">
               查看公告
             </el-button>
-            <el-button size="large" class="ghost-btn" @click="go('/portal/my-reservations')">
-              我的预约
-            </el-button>
-            <el-button size="large" class="ghost-btn" @click="go('/portal/feedback')">
-              反馈留言
-            </el-button>
           </div>
 
           <div class="hero-tags">
@@ -308,14 +302,14 @@ onMounted(loadData)
   margin: 16px 0 14px;
   font-size: 44px;
   line-height: 1.15;
-  color: #ffffff;
+  color: #0f172a;
   letter-spacing: -0.02em;
 }
 
 .hero-copy p {
   margin: 0;
   max-width: 760px;
-  color: #ffffff;
+  color: #475569;
   line-height: 1.8;
   font-size: 16px;
 }
@@ -368,7 +362,7 @@ onMounted(loadData)
 
 .glass-title {
   font-weight: 800;
-  color: #ffffff;
+  color: #0f172a;
   margin-bottom: 16px;
 }
 
@@ -395,7 +389,7 @@ onMounted(loadData)
   display: block;
   margin-top: 8px;
   font-size: 26px;
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .mini-card {
@@ -416,7 +410,7 @@ onMounted(loadData)
   display: block;
   margin-top: 4px;
   font-size: 14px;
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .mini-card .el-icon {
@@ -488,12 +482,12 @@ onMounted(loadData)
 .feature-title {
   font-size: 18px;
   font-weight: 800;
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .feature-desc {
   margin-top: 8px;
-  color: #ffffff;
+  color: #64748b;
   line-height: 1.7;
 }
 
@@ -522,12 +516,12 @@ onMounted(loadData)
 .card-title {
   font-size: 18px;
   font-weight: 800;
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .card-subtitle {
   margin-top: 4px;
-  color: #ffffff;
+  color: #64748b;
   font-size: 13px;
 }
 
@@ -559,12 +553,12 @@ onMounted(loadData)
 .notice-title {
   flex: 1;
   font-weight: 800;
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .notice-content {
   margin-top: 10px;
-  color: #ffffff;
+  color: #64748b;
   line-height: 1.7;
 }
 

@@ -1,41 +1,41 @@
 <template>
-  <div class="portal-shell">
-    <el-card class="portal-card portal-hover">
+  <div class="booking-page portal-shell">
+    <el-card shadow="hover" class="portal-card portal-hover mb-6">
       <template #header>
-        <div class="card-header-row">
+        <div class="section-head">
           <div>
             <div class="portal-section-title">自习室预约</div>
-            <div class="portal-section-subtitle">选择自习室、查看座位、完成预约。</div>
+            <div class="portal-section-subtitle">选择自习室后查看座位，轻松完成预约。</div>
           </div>
-          <el-button type="primary" @click="$router.push('/portal/my-reservations')">查看我的预约</el-button>
+        </div>
+      </template>
+      <el-select v-model="selectedRoom" placeholder="请选择自习室" size="large" class="room-select" @change="fetchSeats">
+        <el-option v-for="room in rooms" :key="room.id" :label="room.name" :value="room.id" />
+      </el-select>
+    </el-card>
+
+    <el-card shadow="hover" class="portal-card portal-hover" v-if="selectedRoom">
+      <template #header>
+        <div class="section-head">
+          <div>
+            <div class="portal-section-title">座位分布</div>
+            <div class="portal-section-subtitle">绿色表示空闲，红色表示使用中。</div>
+          </div>
         </div>
       </template>
 
-      <div class="booking-portal">
-        <div class="booking-side">
-          <div class="booking-hero">
-            <div class="booking-title">选择自习室</div>
-            <div class="booking-desc">卡片式浏览更适合学生端，清晰查看每个自习室的座位信息。</div>
-          </div>
-          <el-select v-model="selectedRoom" placeholder="请选择自习室" size="large" class="w-full mt-4" @change="fetchSeats">
-            <el-option v-for="room in rooms" :key="room.id" :label="room.name" :value="room.id" />
-          </el-select>
-
-          <div class="room-tags" v-if="rooms.length">
-            <span v-for="room in rooms" :key="room.id" class="room-tag" @click="selectedRoom = room.id; fetchSeats()">{{ room.name }}</span>
-          </div>
-        </div>
-
-        <div class="booking-main">
-          <el-empty v-if="!selectedRoom" description="请选择一个自习室开始预约" />
-          <div v-else class="seat-board">
-            <div v-for="seat in seats" :key="seat.id" class="seat-card portal-hover" :class="seat.status === 1 ? 'free' : 'busy'" @click="openBookingDialog(seat)">
-              <div class="seat-number">{{ seat.seat_number }}</div>
-              <div class="seat-meta">
-                <span>{{ seat.has_power ? '有电源' : '无电源' }}</span>
-                <span>{{ seat.status === 1 ? '可预约' : '维护中' }}</span>
-              </div>
-            </div>
+      <div class="seat-grid">
+        <div 
+          v-for="seat in seats" 
+          :key="seat.id"
+          @click="openBookingDialog(seat)"
+          class="seat-item portal-hover"
+          :class="seat.status === 1 ? 'seat-free' : 'seat-busy'"
+        >
+          <div class="seat-number">{{ seat.seat_number }}</div>
+          <div class="seat-meta">
+            <el-icon v-if="seat.has_power"><Lightning /></el-icon>
+            <span>{{ seat.has_power ? '有电源' : '无电源' }}</span>
           </div>
         </div>
       </div>
@@ -64,25 +64,38 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
 import request from '../../utils/request'
+import { Lightning } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const rooms = ref<any[]>([])
 const selectedRoom = ref<number | null>(null)
 const seats = ref<any[]>([])
 const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+
 const dialogVisible = ref(false)
 const currentSeat = ref<any>(null)
 const loading = ref(false)
 
-const bookingForm = reactive({ date: '', timeRange: [] as string[] })
+const bookingForm = reactive({
+  date: '',
+  timeRange: [] as string[]
+})
 
 const fetchRooms = async () => {
-  rooms.value = await request.get('/api/seats/rooms')
+  try {
+    rooms.value = await request.get('/api/seats/rooms')
+  } catch (error) {
+    ElMessage.error('获取自习室失败')
+  }
 }
 
 const fetchSeats = async () => {
   if (!selectedRoom.value) return
-  seats.value = await request.get(`/api/seats/rooms/${selectedRoom.value}/seats`)
+  try {
+    seats.value = await request.get(`/api/seats/rooms/${selectedRoom.value}/seats`)
+  } catch (error) {
+    ElMessage.error('获取座位失败')
+  }
 }
 
 const openBookingDialog = (seat: any) => {
@@ -102,15 +115,17 @@ const submitBooking = async () => {
     ElMessage.warning('请完整填写预约时间')
     return
   }
+  
   loading.value = true
   try {
-    await request.post('/api/seats/reservations', {
+    const payload = {
       user_id: user.value.id,
       seat_id: currentSeat.value.id,
       date: bookingForm.date,
       start_time: bookingForm.timeRange[0],
       end_time: bookingForm.timeRange[1]
-    })
+    }
+    await request.post('/api/seats/reservations', payload)
     ElMessage.success('预约成功！')
     dialogVisible.value = false
     fetchSeats()
@@ -121,5 +136,58 @@ const submitBooking = async () => {
   }
 }
 
-onMounted(fetchRooms)
+onMounted(() => {
+  fetchRooms()
+})
 </script>
+
+<style scoped>
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.room-select {
+  width: 320px;
+}
+
+.seat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 14px;
+}
+
+.seat-item {
+  padding: 18px 14px;
+  border-radius: 18px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: center;
+  background: #f8fbff;
+}
+
+.seat-free {
+  border-color: rgba(34,197,94,0.25);
+}
+
+.seat-busy {
+  opacity: 0.65;
+  border-color: rgba(239,68,68,0.18);
+}
+
+.seat-number {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.seat-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 12px;
+}
+</style>

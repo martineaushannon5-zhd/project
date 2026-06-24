@@ -22,23 +22,23 @@
         text-color="#1f2937"
         router
       >
-        <el-menu-item index="/dashboard">
+        <el-menu-item index="/admin/home">
           <el-icon><DataLine /></el-icon>
           <span>数据看板</span>
         </el-menu-item>
-        <el-menu-item index="/booking">
+        <el-menu-item index="/admin/booking">
           <el-icon><Coordinate /></el-icon>
           <span>座位预约</span>
         </el-menu-item>
-        <el-menu-item index="/my-reservations" v-if="user?.role === 'student'">
+        <el-menu-item index="/admin/my-reservations" v-if="user?.role === 'student'">
           <el-icon><Document /></el-icon>
           <span>我的预约</span>
         </el-menu-item>
-        <el-menu-item index="/rooms" v-if="user?.role === 'admin'">
+        <el-menu-item index="/admin/rooms" v-if="user?.role === 'admin'">
           <el-icon><OfficeBuilding /></el-icon>
           <span>自习室管理</span>
         </el-menu-item>
-        <el-menu-item index="/user" v-if="user?.role === 'admin'">
+        <el-menu-item index="/admin/user" v-if="user?.role === 'admin'">
           <el-icon><User /></el-icon>
           <span>用户管理</span>
         </el-menu-item>

@@ -39,7 +39,7 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'feedback',
         name: 'PortalFeedback',
-        component: () => import('../views/portal/PortalFeedback.vue')
+        component: () => import('../views/user/User.vue')
       },
       {
         path: 'user',

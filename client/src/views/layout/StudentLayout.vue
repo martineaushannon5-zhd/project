@@ -81,3 +81,142 @@ const logout = () => {
   router.push('/login')
 }
 </script>
+
+<style scoped>
+.student-layout {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+}
+
+.student-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  height: 78px;
+  padding: 0 28px;
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.student-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+}
+
+.brand-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}
+
+.brand-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.brand-sub {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.portal-menu {
+  border-bottom: none;
+  background: transparent;
+}
+
+.portal-menu :deep(.el-menu-item) {
+  height: 50px;
+  line-height: 50px;
+  border-radius: 999px;
+  margin: 0 6px;
+  padding: 0 18px;
+  font-weight: 600;
+  transition: all 0.22s ease;
+}
+
+.portal-menu :deep(.el-menu-item:hover) {
+  transform: translateY(-2px);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.portal-menu :deep(.el-menu-item.is-active) {
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(124,58,237,0.10));
+  color: #1d4ed8;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mobile-toggle {
+  display: none;
+}
+
+.student-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 20px 44px;
+}
+
+.student-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 24px 28px;
+  color: #64748b;
+  font-size: 12px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+@media (max-width: 960px) {
+  .desktop-nav {
+    display: none;
+  }
+
+  .mobile-toggle {
+    display: inline-flex;
+  }
+
+  .student-header {
+    padding: 0 16px;
+  }
+
+  .student-main {
+    padding: 20px 14px 32px;
+  }
+
+  .student-footer {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+</style>
