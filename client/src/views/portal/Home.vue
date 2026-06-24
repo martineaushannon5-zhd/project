@@ -180,8 +180,8 @@ const loadData = async () => {
     request.get('/api/seats/stats'),
     request.get('/api/seats/notices')
   ])
-  stats.value = statRes
-  notices.value = noticeRes || []
+  stats.value = statRes as any
+  notices.value = (noticeRes as any) || []
   await nextTick()
   initChart()
 }
