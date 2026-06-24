@@ -1,39 +1,47 @@
 <template>
-  <div class="booking-container">
-    <el-card shadow="never" class="rounded-xl border-none mb-6">
+  <div class="portal-shell">
+    <el-card class="portal-card portal-hover">
       <template #header>
-        <div class="font-bold text-gray-700">自习室选择</div>
+        <div class="card-header-row">
+          <div>
+            <div class="portal-section-title">自习室预约</div>
+            <div class="portal-section-subtitle">选择自习室、查看座位、完成预约。</div>
+          </div>
+          <el-button type="primary" @click="$router.push('/portal/my-reservations')">查看我的预约</el-button>
+        </div>
       </template>
-      <el-select v-model="selectedRoom" placeholder="请选择自习室" size="large" class="w-64" @change="fetchSeats">
-        <el-option v-for="room in rooms" :key="room.id" :label="room.name" :value="room.id" />
-      </el-select>
-    </el-card>
 
-    <el-card shadow="never" class="rounded-xl border-none" v-if="selectedRoom">
-      <template #header>
-        <div class="font-bold text-gray-700">座位分布 (绿色: 空闲, 红色: 使用中)</div>
-      </template>
-      
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <div 
-          v-for="seat in seats" 
-          :key="seat.id"
-          @click="openBookingDialog(seat)"
-          class="p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 text-center hover:shadow-md"
-          :class="seat.status === 1 ? 'border-green-400 bg-green-50 hover:bg-green-100 text-green-700' : 'border-red-400 bg-red-50 cursor-not-allowed text-red-700 opacity-60'"
-        >
-          <div class="font-bold text-lg mb-1">{{ seat.seat_number }}</div>
-          <div class="text-xs flex items-center justify-center gap-1">
-            <el-icon v-if="seat.has_power"><Lightning /></el-icon>
-            <span v-if="seat.has_power">有电源</span>
-            <span v-else>无电源</span>
+      <div class="booking-portal">
+        <div class="booking-side">
+          <div class="booking-hero">
+            <div class="booking-title">选择自习室</div>
+            <div class="booking-desc">卡片式浏览更适合学生端，清晰查看每个自习室的座位信息。</div>
+          </div>
+          <el-select v-model="selectedRoom" placeholder="请选择自习室" size="large" class="w-full mt-4" @change="fetchSeats">
+            <el-option v-for="room in rooms" :key="room.id" :label="room.name" :value="room.id" />
+          </el-select>
+
+          <div class="room-tags" v-if="rooms.length">
+            <span v-for="room in rooms" :key="room.id" class="room-tag" @click="selectedRoom = room.id; fetchSeats()">{{ room.name }}</span>
+          </div>
+        </div>
+
+        <div class="booking-main">
+          <el-empty v-if="!selectedRoom" description="请选择一个自习室开始预约" />
+          <div v-else class="seat-board">
+            <div v-for="seat in seats" :key="seat.id" class="seat-card portal-hover" :class="seat.status === 1 ? 'free' : 'busy'" @click="openBookingDialog(seat)">
+              <div class="seat-number">{{ seat.seat_number }}</div>
+              <div class="seat-meta">
+                <span>{{ seat.has_power ? '有电源' : '无电源' }}</span>
+                <span>{{ seat.status === 1 ? '可预约' : '维护中' }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </el-card>
 
-    <!-- 预约弹窗 -->
-    <el-dialog v-model="dialogVisible" title="确认预约" width="400px" destroy-on-close>
+    <el-dialog v-model="dialogVisible" title="确认预约" width="420px" destroy-on-close>
       <el-form :model="bookingForm" label-width="80px">
         <el-form-item label="座位号">
           <el-input :value="currentSeat?.seat_number" disabled />
@@ -46,10 +54,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitBooking" :loading="loading">确认预约</el-button>
-        </span>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitBooking" :loading="loading">确认预约</el-button>
       </template>
     </el-dialog>
   </div>
@@ -58,40 +64,25 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
 import request from '../../utils/request'
-import { Lightning } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const rooms = ref<any[]>([])
 const selectedRoom = ref<number | null>(null)
 const seats = ref<any[]>([])
 const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
-
 const dialogVisible = ref(false)
 const currentSeat = ref<any>(null)
 const loading = ref(false)
 
-const bookingForm = reactive({
-  date: '',
-  timeRange: [] as string[]
-})
+const bookingForm = reactive({ date: '', timeRange: [] as string[] })
 
 const fetchRooms = async () => {
-  try {
-    const res: any = await request.get('/api/seats/rooms')
-    rooms.value = res
-  } catch (error) {
-    ElMessage.error('获取自习室失败')
-  }
+  rooms.value = await request.get('/api/seats/rooms')
 }
 
 const fetchSeats = async () => {
   if (!selectedRoom.value) return
-  try {
-    const res: any = await request.get(`/api/seats/rooms/${selectedRoom.value}/seats`)
-    seats.value = res
-  } catch (error) {
-    ElMessage.error('获取座位失败')
-  }
+  seats.value = await request.get(`/api/seats/rooms/${selectedRoom.value}/seats`)
 }
 
 const openBookingDialog = (seat: any) => {
@@ -101,7 +92,6 @@ const openBookingDialog = (seat: any) => {
   }
   currentSeat.value = seat
   dialogVisible.value = true
-  // 设置默认时间为今天
   const today = new Date().toISOString().split('T')[0]
   bookingForm.date = today
   bookingForm.timeRange = ['08:00:00', '12:00:00']
@@ -112,20 +102,18 @@ const submitBooking = async () => {
     ElMessage.warning('请完整填写预约时间')
     return
   }
-  
   loading.value = true
   try {
-    const payload = {
+    await request.post('/api/seats/reservations', {
       user_id: user.value.id,
       seat_id: currentSeat.value.id,
       date: bookingForm.date,
       start_time: bookingForm.timeRange[0],
       end_time: bookingForm.timeRange[1]
-    }
-    await request.post('/api/seats/reservations', payload)
+    })
     ElMessage.success('预约成功！')
     dialogVisible.value = false
-    fetchSeats() // 刷新座位状态
+    fetchSeats()
   } catch (error: any) {
     ElMessage.error(error.response?.data?.detail || '预约失败')
   } finally {
@@ -133,7 +121,5 @@ const submitBooking = async () => {
   }
 }
 
-onMounted(() => {
-  fetchRooms()
-})
+onMounted(fetchRooms)
 </script>

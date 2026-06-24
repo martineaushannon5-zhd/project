@@ -2,19 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
-from schemas import UserCreate, UserResponse
-from crud import get_user_by_username, create_user, get_users
+from schemas import UserCreate, UserResponse, FeedbackCreate, FeedbackResponse, FeedbackReply
+from crud import get_user_by_username, create_user, get_users, create_feedback, get_feedback_list, reply_feedback
 from database import get_db
 
 router = APIRouter(prefix="/api/users", tags=["用户模块"])
 
 @router.post("/login")
 async def login(user: UserCreate, db: AsyncSession = Depends(get_db)):
-    """用户登录 (测试用，明文验证)"""
+    """用户登录（测试用，明文验证）"""
     db_user = await get_user_by_username(db, user.username)
     if not db_user or db_user.password != user.password:
         raise HTTPException(status_code=400, detail="用户名或密码错误")
-    return {"message": "登录成功", "user": {"id": db_user.id, "username": db_user.username, "role": db_user.role}}
+    return {"message": "登录成功", "user": {"id": db_user.id, "username": db_user.username, "role": db_user.role, "real_name": db_user.real_name}}
 
 @router.post("/register", response_model=UserResponse)
 async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
@@ -28,3 +28,21 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
 async def get_all_users(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
     """获取用户列表"""
     return await get_users(db, skip=skip, limit=limit)
+
+@router.get("/feedback", response_model=List[FeedbackResponse])
+async def feedback_list(db: AsyncSession = Depends(get_db)):
+    """获取反馈列表"""
+    return await get_feedback_list(db)
+
+@router.post("/feedback", response_model=FeedbackResponse)
+async def submit_feedback(feedback: FeedbackCreate, db: AsyncSession = Depends(get_db)):
+    """提交反馈"""
+    return await create_feedback(db, feedback)
+
+@router.post("/feedback/{feedback_id}/reply", response_model=FeedbackResponse)
+async def reply_to_feedback(feedback_id: int, reply: FeedbackReply, db: AsyncSession = Depends(get_db)):
+    """回复反馈"""
+    result = await reply_feedback(db, feedback_id, reply.reply)
+    if not result:
+        raise HTTPException(status_code=404, detail="反馈不存在")
+    return result

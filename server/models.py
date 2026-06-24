@@ -15,6 +15,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow, comment="创建时间")
     
     reservations = relationship("Reservation", back_populates="user")
+    feedbacks = relationship("Feedback", back_populates="user")
 
 class Room(Base):
     __tablename__ = "room"
@@ -24,7 +25,7 @@ class Room(Base):
     description = Column(String(255), comment="描述")
     created_at = Column(DateTime, default=datetime.utcnow, comment="创建时间")
     
-    seats = relationship("Seat", back_populates="room")
+    seats = relationship("Seat", back_populates="room", cascade="all, delete-orphan")
 
 class Seat(Base):
     __tablename__ = "seat"
@@ -53,3 +54,25 @@ class Reservation(Base):
     
     user = relationship("User", back_populates="reservations")
     seat = relationship("Seat", back_populates="reservations")
+
+class Notice(Base):
+    __tablename__ = "notice"
+
+    id = Column(Integer, primary_key=True, index=True, comment="公告ID")
+    title = Column(String(100), nullable=False, comment="公告标题")
+    content = Column(String(1000), nullable=False, comment="公告内容")
+    level = Column(String(20), default="info", comment="公告等级")
+    is_pinned = Column(Boolean, default=False, comment="是否置顶")
+    created_at = Column(DateTime, default=datetime.utcnow, comment="创建时间")
+
+class Feedback(Base):
+    __tablename__ = "feedback"
+
+    id = Column(Integer, primary_key=True, index=True, comment="反馈ID")
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, comment="反馈用户ID")
+    content = Column(String(1000), nullable=False, comment="反馈内容")
+    status = Column(String(20), default="pending", comment="处理状态")
+    reply = Column(String(1000), comment="管理员回复")
+    created_at = Column(DateTime, default=datetime.utcnow, comment="创建时间")
+
+    user = relationship("User", back_populates="feedbacks")

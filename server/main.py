@@ -20,18 +20,12 @@ app.add_middleware(
     allow_headers=["*"],  # 允许所有 HTTP 请求头
 )
 
-# 2. 挂载静态文件目录 (用于存放上传的图片/文件)
-# 为了确保在没有 D 盘的环境也能运行，使用绝对路径或相对路径的回退方案
-UPLOAD_DIR = r"C:\uploads9" if os.path.exists("C:\\") else os.path.join(os.path.dirname(__file__), "uploads9")
-try:
-    if not os.path.exists(UPLOAD_DIR):
-        os.makedirs(UPLOAD_DIR)
-except Exception:
-    UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads9")
-    if not os.path.exists(UPLOAD_DIR):
-        os.makedirs(UPLOAD_DIR)
+# 2. 挂载静态文件目录（统一使用 resource 目录存放图片、文件与生成资源）
+RESOURCE_DIR = os.path.join(os.path.dirname(__file__), "resource")
+if not os.path.exists(RESOURCE_DIR):
+    os.makedirs(RESOURCE_DIR)
 
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+app.mount("/resource", StaticFiles(directory=RESOURCE_DIR), name="resource")
 
 # 3. 注册业务路由
 app.include_router(user.router)

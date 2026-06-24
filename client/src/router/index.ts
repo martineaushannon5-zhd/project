@@ -9,29 +9,74 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/',
-    name: 'Layout',
-    component: () => import('../views/layout/Layout.vue'),
-    redirect: '/dashboard',
+    redirect: '/login'
+  },
+  {
+    path: '/portal',
+    component: () => import('../views/layout/StudentLayout.vue'),
+    redirect: '/portal/home',
     children: [
       {
-        path: 'dashboard',
-        name: 'Dashboard',
+        path: 'home',
+        name: 'PortalHome',
+        component: () => import('../views/portal/Home.vue')
+      },
+      {
+        path: 'booking',
+        name: 'PortalBooking',
+        component: () => import('../views/booking/Booking.vue')
+      },
+      {
+        path: 'notices',
+        name: 'PortalNotices',
+        component: () => import('../views/portal/PortalNotices.vue')
+      },
+      {
+        path: 'my-reservations',
+        name: 'PortalMyReservations',
+        component: () => import('../views/booking/MyReservations.vue')
+      },
+      {
+        path: 'feedback',
+        name: 'PortalFeedback',
+        component: () => import('../views/portal/PortalFeedback.vue')
+      },
+      {
+        path: 'user',
+        name: 'PortalUser',
+        component: () => import('../views/portal/Profile.vue')
+      }
+    ]
+  },
+  {
+    path: '/admin',
+    component: () => import('../views/layout/Layout.vue'),
+    redirect: '/admin/home',
+    children: [
+      {
+        path: 'home',
+        name: 'AdminHome',
         component: () => import('../views/dashboard/Dashboard.vue')
       },
       {
         path: 'booking',
-        name: 'Booking',
+        name: 'AdminBooking',
         component: () => import('../views/booking/Booking.vue')
       },
       {
         path: 'my-reservations',
-        name: 'MyReservations',
+        name: 'AdminMyReservations',
         component: () => import('../views/booking/MyReservations.vue')
       },
       {
         path: 'user',
-        name: 'User',
+        name: 'AdminUser',
         component: () => import('../views/user/User.vue')
+      },
+      {
+        path: 'rooms',
+        name: 'RoomManagement',
+        component: () => import('../views/room/RoomManagement.vue')
       }
     ]
   }

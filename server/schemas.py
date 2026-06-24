@@ -38,10 +38,15 @@ class RoomBase(BaseModel):
     name: str
     description: Optional[str] = None
 
+class RoomCreate(RoomBase):
+    pass
+
+class RoomUpdate(RoomBase):
+    pass
+
 class RoomResponse(RoomBase):
     id: int
     created_at: datetime
-    # seats: List[SeatResponse] = []
     
     class Config:
         from_attributes = True
@@ -62,5 +67,42 @@ class ReservationResponse(ReservationBase):
     status: str
     created_at: datetime
     
+    class Config:
+        from_attributes = True
+
+# --- Notice Schemas ---
+class NoticeBase(BaseModel):
+    title: str
+    content: str
+    level: Optional[str] = "info"
+    is_pinned: Optional[bool] = False
+
+class NoticeCreate(NoticeBase):
+    pass
+
+class NoticeResponse(NoticeBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# --- Feedback Schemas ---
+class FeedbackBase(BaseModel):
+    content: str
+
+class FeedbackCreate(FeedbackBase):
+    user_id: int
+
+class FeedbackReply(BaseModel):
+    reply: str
+
+class FeedbackResponse(FeedbackBase):
+    id: int
+    user_id: int
+    status: str
+    reply: Optional[str] = None
+    created_at: datetime
+
     class Config:
         from_attributes = True
