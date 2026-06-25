@@ -14,8 +14,8 @@ class User(Base):
     avatar = Column(String(255), comment="头像路径")
     created_at = Column(DateTime, default=datetime.utcnow, comment="创建时间")
     
-    reservations = relationship("Reservation", back_populates="user")
-    feedbacks = relationship("Feedback", back_populates="user")
+    reservations = relationship("Reservation", back_populates="user", cascade="all, delete-orphan", passive_deletes=True)
+    feedbacks = relationship("Feedback", back_populates="user", cascade="all, delete-orphan", passive_deletes=True)
 
 class Room(Base):
     __tablename__ = "room"

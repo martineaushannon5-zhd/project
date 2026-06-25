@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
+from database import Base, engine
 from routers import user, seat
 
 app = FastAPI(
@@ -30,6 +31,12 @@ app.mount("/resource", StaticFiles(directory=RESOURCE_DIR), name="resource")
 # 3. 注册业务路由
 app.include_router(user.router)
 app.include_router(seat.router)
+
+@app.on_event("startup")
+async def startup():
+    """启动时自动补齐缺失表结构，避免本地数据库遗漏 notice/feedback 表。"""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 # 4. 根路由测试
 @app.get("/")

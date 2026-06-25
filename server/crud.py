@@ -1,12 +1,16 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import func
+from sqlalchemy import func, or_
 import models, schemas
 from datetime import datetime, timedelta
 
 # --- User CRUD ---
 async def get_user_by_username(db: AsyncSession, username: str):
     result = await db.execute(select(models.User).where(models.User.username == username))
+    return result.scalars().first()
+
+async def get_user_by_id(db: AsyncSession, user_id: int):
+    result = await db.execute(select(models.User).where(models.User.id == user_id))
     return result.scalars().first()
 
 async def create_user(db: AsyncSession, user: schemas.UserCreate):
@@ -22,9 +26,42 @@ async def create_user(db: AsyncSession, user: schemas.UserCreate):
     await db.refresh(db_user)
     return db_user
 
-async def get_users(db: AsyncSession, skip: int = 0, limit: int = 100):
-    result = await db.execute(select(models.User).offset(skip).limit(limit))
+async def get_users(db: AsyncSession, skip: int = 0, limit: int = 100, keyword: str | None = None, role: str | None = None):
+    stmt = select(models.User)
+    if keyword:
+        stmt = stmt.where(
+            or_(
+                models.User.username.like(f"%{keyword}%"),
+                models.User.real_name.like(f"%{keyword}%")
+            )
+        )
+    if role:
+        stmt = stmt.where(models.User.role == role)
+    stmt = stmt.order_by(models.User.created_at.desc()).offset(skip).limit(limit)
+    result = await db.execute(stmt)
     return result.scalars().all()
+
+async def update_user(db: AsyncSession, user_id: int, user_data: schemas.UserUpdate):
+    db_user = await get_user_by_id(db, user_id)
+    if not db_user:
+        return None
+
+    payload = user_data.model_dump(exclude_unset=True)
+    for field, value in payload.items():
+        setattr(db_user, field, value)
+
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user
+
+async def delete_user(db: AsyncSession, user_id: int):
+    db_user = await get_user_by_id(db, user_id)
+    if not db_user:
+        return None
+
+    await db.delete(db_user)
+    await db.commit()
+    return db_user
 
 # --- Room & Seat CRUD ---
 async def get_rooms(db: AsyncSession):
@@ -128,16 +165,41 @@ async def create_notice(db: AsyncSession, notice: schemas.NoticeCreate):
     return db_notice
 
 # --- Feedback CRUD ---
-async def get_feedback_list(db: AsyncSession):
-    result = await db.execute(select(models.Feedback).order_by(models.Feedback.created_at.desc()))
-    return result.scalars().all()
+def serialize_feedback(feedback: models.Feedback, username: str | None = None, real_name: str | None = None):
+    return {
+        "id": feedback.id,
+        "user_id": feedback.user_id,
+        "username": username,
+        "real_name": real_name,
+        "content": feedback.content,
+        "status": feedback.status,
+        "reply": feedback.reply,
+        "created_at": feedback.created_at,
+    }
+
+async def get_feedback_list(db: AsyncSession, user_id: int | None = None):
+    stmt = (
+        select(models.Feedback, models.User.username, models.User.real_name)
+        .join(models.User, models.User.id == models.Feedback.user_id)
+        .order_by(models.Feedback.created_at.desc())
+    )
+    if user_id:
+        stmt = stmt.where(models.Feedback.user_id == user_id)
+    result = await db.execute(stmt)
+    feedback_list = result.all()
+    return [serialize_feedback(item[0], item[1], item[2]) for item in feedback_list]
 
 async def create_feedback(db: AsyncSession, feedback: schemas.FeedbackCreate):
     db_feedback = models.Feedback(**feedback.model_dump())
     db.add(db_feedback)
     await db.commit()
     await db.refresh(db_feedback)
-    return db_feedback
+    db_user = await get_user_by_id(db, db_feedback.user_id)
+    return serialize_feedback(
+        db_feedback,
+        db_user.username if db_user else None,
+        db_user.real_name if db_user else None,
+    )
 
 async def reply_feedback(db: AsyncSession, feedback_id: int, reply: str):
     result = await db.execute(select(models.Feedback).where(models.Feedback.id == feedback_id))
@@ -148,6 +210,21 @@ async def reply_feedback(db: AsyncSession, feedback_id: int, reply: str):
     feedback.status = "replied"
     await db.commit()
     await db.refresh(feedback)
+    db_user = await get_user_by_id(db, feedback.user_id)
+    return serialize_feedback(
+        feedback,
+        db_user.username if db_user else None,
+        db_user.real_name if db_user else None,
+    )
+
+async def delete_feedback(db: AsyncSession, feedback_id: int):
+    result = await db.execute(select(models.Feedback).where(models.Feedback.id == feedback_id))
+    feedback = result.scalars().first()
+    if not feedback:
+        return None
+
+    await db.delete(feedback)
+    await db.commit()
     return feedback
 
 # --- Dashboard Stats ---

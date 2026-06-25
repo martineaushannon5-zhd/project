@@ -10,7 +10,14 @@ DATABASE_URL = os.getenv(
 )
 
 # 创建异步数据库引擎
-engine = create_async_engine(DATABASE_URL, echo=True)
+# 云数据库/Serverless 环境会主动回收空闲连接，这里开启连接预检查与定期回收，
+# 避免 Render 运行一段时间后从连接池取到失效连接而触发 500。
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=True,
+    pool_pre_ping=True,
+    pool_recycle=1800,
+)
 
 # 创建异步会话工厂
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)

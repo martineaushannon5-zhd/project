@@ -12,6 +12,13 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+    real_name: Optional[str] = None
+    role: Optional[str] = None
+    avatar: Optional[str] = None
+
 class UserResponse(UserBase):
     id: int
     created_at: datetime
@@ -100,6 +107,8 @@ class FeedbackReply(BaseModel):
 class FeedbackResponse(FeedbackBase):
     id: int
     user_id: int
+    username: Optional[str] = None
+    real_name: Optional[str] = None
     status: str
     reply: Optional[str] = None
     created_at: datetime
