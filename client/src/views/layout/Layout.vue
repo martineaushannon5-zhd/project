@@ -1,17 +1,16 @@
 <template>
-  <el-container class="layout-shell min-h-screen">
-    <el-aside class="side-panel" width="260px">
+  <el-container class="admin-shell min-h-screen">
+    <el-aside class="admin-side" :width="isCollapsed ? '88px' : '260px'">
       <div class="brand-box">
-        <div class="brand-copy">
-          <div class="brand-kicker">Study Room Admin</div>
+        <div class="brand-copy" v-if="!isCollapsed">
+          <div class="brand-kicker">Admin Control</div>
           <div class="brand-title">自习室管理系统</div>
           <div class="brand-subtitle">后台运营中心</div>
         </div>
-        <div class="brand-wave">
-          <span></span>
-          <span></span>
-          <span></span>
+        <div class="brand-wave" v-if="!isCollapsed">
+          <span></span><span></span><span></span>
         </div>
+        <div v-else class="brand-mini">SR</div>
       </div>
 
       <el-menu
@@ -24,38 +23,44 @@
       >
         <el-menu-item index="/admin/home">
           <el-icon><DataLine /></el-icon>
-          <span>数据看板</span>
+          <span v-if="!isCollapsed">数据看板</span>
         </el-menu-item>
         <el-menu-item index="/admin/booking">
           <el-icon><Coordinate /></el-icon>
-          <span>座位预约</span>
+          <span v-if="!isCollapsed">座位预约</span>
         </el-menu-item>
-        <el-menu-item index="/admin/my-reservations" v-if="user?.role === 'student'">
-          <el-icon><Document /></el-icon>
-          <span>我的预约</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/rooms" v-if="user?.role === 'admin'">
+        <el-menu-item index="/admin/rooms">
           <el-icon><OfficeBuilding /></el-icon>
-          <span>自习室管理</span>
+          <span v-if="!isCollapsed">自习室管理</span>
         </el-menu-item>
-        <el-menu-item index="/admin/user" v-if="user?.role === 'admin'">
+        <el-menu-item index="/admin/user">
           <el-icon><User /></el-icon>
-          <span>用户管理</span>
+          <span v-if="!isCollapsed">用户管理</span>
+        </el-menu-item>
+        <el-menu-item index="/admin/notices">
+          <el-icon><Bell /></el-icon>
+          <span v-if="!isCollapsed">公告管理</span>
+        </el-menu-item>
+        <el-menu-item index="/admin/feedback">
+          <el-icon><ChatDotRound /></el-icon>
+          <span v-if="!isCollapsed">反馈处理</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
 
     <el-container>
       <el-header class="top-bar">
-        <div class="top-copy">
-          <div class="top-title">欢迎回来，{{ user?.real_name || user?.username || '管理员' }}</div>
-          <div class="top-subtitle">今天也要保持高效管理</div>
+        <div class="top-left">
+          <el-button class="collapse-btn" text @click="isCollapsed = !isCollapsed">
+            <el-icon><Fold v-if="!isCollapsed" /><Expand v-else /></el-icon>
+          </el-button>
+          <div class="top-copy">
+            <div class="top-title">欢迎回来，{{ user?.real_name || user?.username || '管理员' }}</div>
+            <div class="top-subtitle">今天也要保持高效管理</div>
+          </div>
         </div>
         <div class="top-actions">
-          <div class="status-pill">
-            <span class="status-dot"></span>
-            系统运行正常
-          </div>
+          <div class="status-pill"><span class="status-dot"></span>系统运行正常</div>
           <el-button type="primary" plain @click="logout">退出登录</el-button>
         </div>
       </el-header>
@@ -72,15 +77,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { DataLine, Coordinate, User, Document, OfficeBuilding } from '@element-plus/icons-vue'
+import { DataLine, Coordinate, User, OfficeBuilding, Bell, ChatDotRound, Fold, Expand } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
-
 const activeMenu = computed(() => route.path)
+const isCollapsed = ref(false)
+
+const updateResponsive = () => {
+  isCollapsed.value = window.innerWidth < 1100
+}
+
+onMounted(() => {
+  updateResponsive()
+  window.addEventListener('resize', updateResponsive)
+})
+
+onBeforeUnmount(() => window.removeEventListener('resize', updateResponsive))
 
 const logout = () => {
   localStorage.removeItem('user')
@@ -89,215 +105,35 @@ const logout = () => {
 </script>
 
 <style scoped>
-.layout-shell {
-  position: relative;
-  overflow: hidden;
-  background: transparent;
-}
-
-.layout-shell::before,
-.layout-shell::after {
-  content: '';
-  position: fixed;
-  border-radius: 999px;
-  pointer-events: none;
-  filter: blur(10px);
-  opacity: 0.55;
-  z-index: 0;
-}
-
-.layout-shell::before {
-  width: 180px;
-  height: 180px;
-  left: -60px;
-  top: 120px;
-  background: radial-gradient(circle, rgba(59,130,246,0.22), rgba(59,130,246,0));
-  animation: floatBlob 9s ease-in-out infinite;
-}
-
-.layout-shell::after {
-  width: 220px;
-  height: 220px;
-  right: -70px;
-  top: 280px;
-  background: radial-gradient(circle, rgba(124,58,237,0.16), rgba(124,58,237,0));
-  animation: floatBlob 12s ease-in-out infinite reverse;
-}
-
-.side-panel {
-  position: relative;
-  z-index: 1;
-  padding: 18px 14px;
+.admin-shell { background: transparent; }
+.admin-side {
+  position: relative; z-index: 1; padding: 18px 14px;
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.98));
-  border-right: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 12px 0 30px rgba(15, 23, 42, 0.04);
+  border-right: 1px solid rgba(148, 163, 184, 0.18); box-shadow: 12px 0 30px rgba(15, 23, 42, 0.04);
 }
-
-.brand-box {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #eff6ff, #eef2ff);
-  margin-bottom: 18px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
-}
-
-.brand-copy {
-  min-width: 0;
-}
-
-.brand-kicker {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(37, 99, 235, 0.12);
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  margin-bottom: 10px;
-}
-
-.brand-title {
-  font-weight: 900;
-  color: #1e293b;
-  font-size: 18px;
-  line-height: 1.2;
-}
-
-.brand-subtitle {
-  font-size: 12px;
-  color: #64748b;
-  margin-top: 4px;
-}
-
-.brand-wave {
-  display: flex;
-  gap: 4px;
-  align-items: flex-end;
-  height: 28px;
-  padding-top: 4px;
-}
-
-.brand-wave span {
-  width: 4px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #60a5fa, #8b5cf6);
-  animation: wave 1.2s ease-in-out infinite;
-}
-
-.brand-wave span:nth-child(1) { height: 10px; animation-delay: 0s; }
-.brand-wave span:nth-child(2) { height: 18px; animation-delay: 0.15s; }
-.brand-wave span:nth-child(3) { height: 14px; animation-delay: 0.3s; }
-
-.side-menu {
-  border: none;
-}
-
-.side-menu :deep(.el-menu-item) {
-  margin: 6px 0;
-  border-radius: 14px;
-  transition: all 0.22s ease;
-}
-
-.side-menu :deep(.el-menu-item:hover) {
-  transform: translateX(8px);
-  background: rgba(37, 99, 235, 0.08);
-}
-
-.side-menu :deep(.el-menu-item.is-active) {
-  background: linear-gradient(90deg, rgba(37,99,235,0.14), rgba(124,58,237,0.08));
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.10);
-}
-
-.top-bar {
-  position: relative;
-  z-index: 1;
-  height: 76px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 28px;
-  background: rgba(255,255,255,0.78);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-}
-
-.top-copy {
-  position: relative;
-}
-
-.top-copy::after {
-  content: '';
-  display: block;
-  width: 120px;
-  height: 3px;
-  margin-top: 10px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #2563eb, #7c3aed);
-}
-
-.top-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: #0f172a;
-}
-
-.top-subtitle {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.top-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(16, 185, 129, 0.10);
-  color: #059669;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: #10b981;
-  box-shadow: 0 0 0 6px rgba(16,185,129,0.15);
-  animation: pulseDot 1.6s ease-in-out infinite;
-}
-
-.main-content {
-  position: relative;
-  z-index: 1;
-  padding: 24px;
-}
-
-@keyframes floatBlob {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(18px) scale(1.06); }
-}
-
-@keyframes wave {
-  0%, 100% { transform: scaleY(0.75); opacity: 0.6; }
-  50% { transform: scaleY(1.3); opacity: 1; }
-}
-
-@keyframes pulseDot {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.12); }
-}
+.brand-box { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:16px; border-radius:18px; background:linear-gradient(135deg,#eff6ff,#eef2ff); margin-bottom:18px; }
+.brand-kicker { display:inline-flex; padding:4px 10px; border-radius:999px; background:rgba(37,99,235,.12); color:#2563eb; font-size:12px; font-weight:700; margin-bottom:10px; }
+.brand-title { font-weight:900; color:#1e293b; font-size:18px; }
+.brand-subtitle { font-size:12px; color:#64748b; }
+.brand-mini { width:44px; height:44px; border-radius:14px; display:grid; place-items:center; background:linear-gradient(135deg,#2563eb,#7c3aed); color:#fff; font-weight:900; }
+.brand-wave { display:flex; gap:4px; align-items:flex-end; height:28px; padding-top:4px; }
+.brand-wave span { width:4px; border-radius:999px; background:linear-gradient(180deg,#60a5fa,#8b5cf6); animation: wave 1.2s ease-in-out infinite; }
+.brand-wave span:nth-child(1){height:10px}.brand-wave span:nth-child(2){height:18px;animation-delay:.15s}.brand-wave span:nth-child(3){height:14px;animation-delay:.3s}
+.side-menu { border:none; }
+.side-menu :deep(.el-menu-item) { margin:6px 0; border-radius:14px; transition:all .22s ease; }
+.side-menu :deep(.el-menu-item:hover){ transform:translateX(8px); background:rgba(37,99,235,.08); }
+.side-menu :deep(.el-menu-item.is-active){ color:#fff; background:linear-gradient(90deg,#2563eb,#7c3aed); box-shadow:0 10px 24px rgba(37,99,235,.10); }
+.top-bar { position:relative; z-index:1; height:76px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; background:rgba(255,255,255,.78); backdrop-filter:blur(12px); border-bottom:1px solid rgba(148,163,184,.16); }
+.top-left{display:flex;align-items:center;gap:12px}
+.collapse-btn{border-radius:12px}
+.top-copy::after{content:'';display:block;width:120px;height:3px;margin-top:10px;border-radius:999px;background:linear-gradient(90deg,#2563eb,#7c3aed)}
+.top-title { font-size:18px; font-weight:800; color:#0f172a; }
+.top-subtitle { margin-top:4px; font-size:12px; color:#64748b; }
+.top-actions { display:flex; align-items:center; gap:12px; }
+.status-pill { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:rgba(16,185,129,.10); color:#059669; font-size:12px; font-weight:600; }
+.status-dot { width:8px; height:8px; border-radius:999px; background:#10b981; box-shadow:0 0 0 6px rgba(16,185,129,.15); animation:pulseDot 1.6s ease-in-out infinite; }
+.main-content { position:relative; z-index:1; padding:24px; }
+@keyframes wave { 0%,100%{transform:scaleY(.75);opacity:.6} 50%{transform:scaleY(1.3);opacity:1} }
+@keyframes pulseDot { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+@media (max-width: 1100px){ .top-bar{padding:0 16px}.main-content{padding:16px}.top-subtitle{display:none} }
 </style>

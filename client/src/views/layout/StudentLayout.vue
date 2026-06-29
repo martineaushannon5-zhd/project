@@ -17,6 +17,7 @@
           <el-menu-item index="/portal/my-reservations">我的预约</el-menu-item>
           <el-menu-item index="/portal/feedback">意见反馈</el-menu-item>
           <el-menu-item index="/portal/user">个人中心</el-menu-item>
+          <el-menu-item index="/portal/author">关于作者</el-menu-item>
         </el-menu>
       </div>
 
@@ -27,6 +28,7 @@
             <el-dropdown-menu>
               <el-dropdown-item @click="goPage('/portal/my-reservations')">我的预约</el-dropdown-item>
               <el-dropdown-item @click="goPage('/portal/user')">个人中心</el-dropdown-item>
+              <el-dropdown-item @click="goPage('/portal/author')">关于作者</el-dropdown-item>
               <el-dropdown-item divided @click="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -43,6 +45,7 @@
         <el-menu-item index="/portal/my-reservations">我的预约</el-menu-item>
         <el-menu-item index="/portal/feedback">意见反馈</el-menu-item>
         <el-menu-item index="/portal/user">个人中心</el-menu-item>
+        <el-menu-item index="/portal/author">关于作者</el-menu-item>
       </el-menu>
     </el-drawer>
 

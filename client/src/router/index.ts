@@ -45,6 +45,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'user',
         name: 'PortalUser',
         component: () => import('../views/portal/Profile.vue')
+      },
+      {
+        path: 'author',
+        name: 'PortalAuthor',
+        component: () => import('../views/portal/Author.vue')
       }
     ]
   },
@@ -72,6 +77,16 @@ const routes: Array<RouteRecordRaw> = [
         path: 'user',
         name: 'AdminUser',
         component: () => import('../views/user/User.vue')
+      },
+      {
+        path: 'notices',
+        name: 'AdminNoticeManagement',
+        component: () => import('../views/portal/PortalNotices.vue')
+      },
+      {
+        path: 'feedback',
+        name: 'AdminFeedback',
+        component: () => import('../views/user/AdminFeedback.vue')
       },
       {
         path: 'rooms',
