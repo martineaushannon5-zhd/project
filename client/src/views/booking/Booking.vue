@@ -346,6 +346,7 @@
               type="date"
               placeholder="选择日期"
               class="w-full"
+              :disabled-date="disablePastDates"
               value-format="YYYY-MM-DD"
             />
           </el-form-item>
@@ -362,6 +363,9 @@
             />
           </el-form-item>
         </el-form>
+        <div v-if="!isAdminView" class="booking-tip">
+          同一时间段仅允许保留一条有效预约，系统会自动拦截重复预约和时间冲突。
+        </div>
       </div>
       <template #footer>
         <el-button @click="dialogVisible = false">{{ isAdminView ? '取消干预' : '取消' }}</el-button>
@@ -391,6 +395,16 @@ interface SeatItem {
   has_power?: boolean
 }
 
+interface ReservationItem {
+  id: number
+  user_id: number
+  seat_id: number
+  date: string
+  start_time: string
+  end_time: string
+  status: string
+}
+
 type SeatFilterKey = 'all' | 'free' | 'busy' | 'power'
 
 const route = useRoute()
@@ -400,6 +414,7 @@ const roomStats = ref<Record<number, { total: number, busy: number, usage: numbe
 const selectedRoom = ref<number | null>(null)
 const seats = ref<SeatItem[]>([])
 const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'))
+const userReservations = ref<ReservationItem[]>([])
 const dialogVisible = ref(false)
 const currentSeat = ref<SeatItem | null>(null)
 const loading = ref(false)
@@ -418,6 +433,9 @@ const selectedRoomUsage = computed(() => {
   if (!totalSeats.value) return 0
   return Math.round(((totalSeats.value - freeSeatsCount.value) / totalSeats.value) * 100)
 })
+const activeReservations = computed(() =>
+  userReservations.value.filter((item) => item.status === 'pending' || item.status === 'active')
+)
 
 const roomInsight = computed(() => {
   if (!selectedRoom.value || !totalSeats.value) return '先选择一个自习室开始查看'
@@ -474,8 +492,29 @@ const physicalZones = computed(() => {
 
 const dialogTitle = computed(() => isAdminView.value ? '节点调度干预' : '确认预约')
 const submitButtonText = computed(() => isAdminView.value ? '执行调度指令' : '确认预约')
+const formatLocalDate = (date: Date) => {
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+const todayString = () => formatLocalDate(new Date())
+const disablePastDates = (time: Date) => formatLocalDate(time) < todayString()
+const hasTimeOverlap = (startA: string, endA: string, startB: string, endB: string) => startA < endB && endA > startB
 
 const go = (path: string) => router.push(path)
+
+const fetchUserReservations = async () => {
+  if (!user.value.id) {
+    userReservations.value = []
+    return
+  }
+  try {
+    userReservations.value = await request.get(`/api/seats/reservations/user/${user.value.id}`)
+  } catch (error) {
+    console.error('Failed to fetch user reservations')
+  }
+}
 
 const fetchRooms = async () => {
   try {
@@ -534,7 +573,7 @@ const openBookingDialog = (seat: SeatItem) => {
   }
   currentSeat.value = seat
   dialogVisible.value = true
-  bookingForm.date = new Date().toISOString().split('T')[0]
+  bookingForm.date = todayString()
   bookingForm.timeRange = ['08:00:00', '12:00:00']
 }
 
@@ -542,6 +581,30 @@ const submitBooking = async () => {
   if (!currentSeat.value) return
   if (!bookingForm.date || !bookingForm.timeRange || bookingForm.timeRange.length !== 2) {
     ElMessage.warning('请完整填写预约时间')
+    return
+  }
+  if (bookingForm.date < todayString()) {
+    ElMessage.warning('不能预约过去的日期')
+    return
+  }
+  if (bookingForm.timeRange[0] >= bookingForm.timeRange[1]) {
+    ElMessage.warning('结束时间必须晚于开始时间')
+    return
+  }
+  const conflictingReservation = activeReservations.value.find((item) =>
+    item.date === bookingForm.date &&
+    hasTimeOverlap(item.start_time, item.end_time, bookingForm.timeRange[0], bookingForm.timeRange[1])
+  )
+  if (conflictingReservation) {
+    const isSameSeatAndRange =
+      conflictingReservation.seat_id === currentSeat.value.id &&
+      conflictingReservation.start_time === bookingForm.timeRange[0] &&
+      conflictingReservation.end_time === bookingForm.timeRange[1]
+    ElMessage.warning(
+      isSameSeatAndRange
+        ? '你已经预约过该座位的这个时间段，请勿重复提交'
+        : '该时间段你已有其他预约，请更换时间后再试'
+    )
     return
   }
   loading.value = true
@@ -555,7 +618,7 @@ const submitBooking = async () => {
     })
     ElMessage.success(isAdminView.value ? '调度指令已执行' : '预约成功！')
     dialogVisible.value = false
-    await fetchSeats()
+    await Promise.all([fetchSeats(), fetchUserReservations()])
   } catch (error: any) {
     ElMessage.error(error.response?.data?.detail || '操作失败')
   } finally {
@@ -574,6 +637,7 @@ watch(selectedRoom, () => {
 })
 
 onMounted(fetchRooms)
+onMounted(fetchUserReservations)
 </script>
 
 <style scoped>
@@ -886,6 +950,7 @@ onMounted(fetchRooms)
 .portal-mode .seat-meta-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 12px; background: #f8fafc; color: #475569; font-size: 12px; }
 .portal-mode .seat-meta-pill.muted { color: #64748b; }
 .portal-mode .booking-dialog-body { display: grid; gap: 16px; }
+.portal-mode .booking-tip { padding: 12px 14px; border-radius: 14px; background: rgba(37, 99, 235, 0.06); color: #475569; font-size: 13px; line-height: 1.6; }
 .portal-mode .dialog-seat-banner { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px; border-radius: 22px; background: linear-gradient(135deg, #eff6ff, #f5f3ff); }
 .portal-mode .dialog-seat-label { display: block; color: #64748b; font-size: 12px; }
 .portal-mode .dialog-seat-number { display: block; margin-top: 8px; color: #0f172a; font-size: 24px; }

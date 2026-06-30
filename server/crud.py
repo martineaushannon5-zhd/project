@@ -3,6 +3,9 @@ from sqlalchemy.future import select
 from sqlalchemy import func, or_
 import models, schemas
 from datetime import datetime, timedelta
+from fastapi import HTTPException
+
+ACTIVE_RESERVATION_STATUSES = ("pending", "active")
 
 # --- User CRUD ---
 async def get_user_by_username(db: AsyncSession, username: str):
@@ -77,6 +80,10 @@ async def get_seats_by_room(db: AsyncSession, room_id: int):
     result = await db.execute(select(models.Seat).where(models.Seat.room_id == room_id))
     return result.scalars().all()
 
+async def get_seat_by_id(db: AsyncSession, seat_id: int):
+    result = await db.execute(select(models.Seat).where(models.Seat.id == seat_id))
+    return result.scalars().first()
+
 async def create_room(db: AsyncSession, room_data: schemas.RoomBase):
     """创建自习室"""
     db_room = models.Room(**room_data.model_dump())
@@ -118,6 +125,54 @@ async def batch_create_seats(db: AsyncSession, room_id: int, prefix: str, count:
 
 # --- Reservation CRUD ---
 async def create_reservation(db: AsyncSession, reservation: schemas.ReservationCreate):
+    today = datetime.now().date()
+    if reservation.date < today:
+        raise HTTPException(status_code=400, detail="不能预约过去的日期")
+
+    if reservation.start_time >= reservation.end_time:
+        raise HTTPException(status_code=400, detail="结束时间必须晚于开始时间")
+
+    db_user = await get_user_by_id(db, reservation.user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="预约用户不存在")
+
+    db_seat = await get_seat_by_id(db, reservation.seat_id)
+    if not db_seat:
+        raise HTTPException(status_code=404, detail="座位不存在")
+    if db_seat.status != 1:
+        raise HTTPException(status_code=400, detail="该座位当前不可预约")
+
+    overlapping_seat_reservation = await db.execute(
+        select(models.Reservation).where(
+            models.Reservation.seat_id == reservation.seat_id,
+            models.Reservation.date == reservation.date,
+            models.Reservation.status.in_(ACTIVE_RESERVATION_STATUSES),
+            models.Reservation.start_time < reservation.end_time,
+            models.Reservation.end_time > reservation.start_time,
+        )
+    )
+    if overlapping_seat_reservation.scalars().first():
+        raise HTTPException(status_code=400, detail="该座位在所选时间段已被预约")
+
+    overlapping_user_reservation_result = await db.execute(
+        select(models.Reservation).where(
+            models.Reservation.user_id == reservation.user_id,
+            models.Reservation.date == reservation.date,
+            models.Reservation.status.in_(ACTIVE_RESERVATION_STATUSES),
+            models.Reservation.start_time < reservation.end_time,
+            models.Reservation.end_time > reservation.start_time,
+        )
+    )
+    overlapping_user_reservation = overlapping_user_reservation_result.scalars().first()
+    if overlapping_user_reservation:
+        if (
+            overlapping_user_reservation.seat_id == reservation.seat_id
+            and overlapping_user_reservation.start_time == reservation.start_time
+            and overlapping_user_reservation.end_time == reservation.end_time
+        ):
+            raise HTTPException(status_code=400, detail="你已预约过该座位的这个时间段，请勿重复提交")
+        raise HTTPException(status_code=400, detail="该时间段你已有其他预约，请勿重复预约")
+
     db_res = models.Reservation(**reservation.model_dump())
     db.add(db_res)
     await db.commit()
@@ -125,7 +180,11 @@ async def create_reservation(db: AsyncSession, reservation: schemas.ReservationC
     return db_res
 
 async def get_reservations_by_user(db: AsyncSession, user_id: int):
-    result = await db.execute(select(models.Reservation).where(models.Reservation.user_id == user_id))
+    result = await db.execute(
+        select(models.Reservation)
+        .where(models.Reservation.user_id == user_id)
+        .order_by(models.Reservation.date.desc(), models.Reservation.start_time.desc(), models.Reservation.created_at.desc())
+    )
     return result.scalars().all()
 
 async def cancel_reservation(db: AsyncSession, reservation_id: int, user_id: int):
